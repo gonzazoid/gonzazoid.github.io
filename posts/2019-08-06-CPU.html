@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="x-ua-compatible" content="ie=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Gonzazoid's blog - Простой процессор - первая VM машина для &tau;-lang</title>
+        <link rel="stylesheet" href="../css/default.css" />
+    </head>
+    <body>
+        <header>
+            <div class="logo">
+                <a href="../">Gonzazoid's blog</a>
+            </div>
+            <nav>
+                <a href="../">Index</a>
+                <a href="../resume_ru.html">[ Resume: RU</a>
+                <a href="../resume.html">ENG ]</a>
+                <a href="../contact.html">Contact</a>
+            </nav>
+        </header>
+
+        <main role="main">
+            <h1>Простой процессор - первая VM машина для &tau;-lang</h1>
+            <article>
+    <section class="header">
+        Posted on August  6, 2019
+        
+    </section>
+    <section>
+        <p>Процессор не стековый, есть память, 128к, адресация через регистры и собственно сами регисты. Память 16 разрядная, то есть каждый адрес указывает на границу 16-битного слова.</p>
+<p>Порт ввода/вывода - 1, 16-ти разрядный, в случае если в нем появляются данные(извне) - возникает прерывание(исключение)</p>
+<p>регистров 16, 16 разрядные</p>
+<ul>
+<li>FX - регистр флагов
+<ul>
+<li>ZF</li>
+<li>CF</li>
+<li>EF(разрешает/запрещает обработку исключений)</li>
+<li>FF - выставлен в 1 при старте, нужен для того что бы безусловно выполнять команды. сброс флага приведет к тому что все команды, выполнение которых зависит от этого флага выполняться не будут</li>
+</ul></li>
+<li>EX - регистр обработки исключения. Содержит адрес по которому будет осуществлен переход при внешнем событии</li>
+<li>DX - адрес следующей команды. Запись значения в этот регистр равносильна команде goto</li>
+<li>0X-CX - общего назначения (13 регистров)</li>
+</ul>
+<p>команды:</p>
+<p>ld reg1, reg2 - загружает в reg1 значение (2 байта) расположенное по адресу указанному в reg2 save reg1 reg2 сохраняет в память значение reg1 по адресу хранящемуся в reg2 cp reg1 reg2 - копирует значение reg1 в reg2</p>
+<p>let reg value записывает в reg значение value (задается прямо в коде)</p>
+<p>add reg1 reg2 складывает два регистра, результат в reg1. Устанавливает флаги ZF CF sub reg1 reg2 вычитает reg2 из reg1. Устанавливает ZF CF флаги регистра FX</p>
+<p>and reg1 reg2 логическое побитовое AND результат в reg1 Устанавливает ZF or reg1 reg2 логическое побитовое OR результат в reg1 Устанавливает ZF xor reg1 reg2 логическое побитовое XOR результат в reg1 Устанавливает ZF</p>
+<p>test bit reg - устанавливает ZF в значение равное биту bit (4 бита адресация) в регистре reg</p>
+<p>rl offset reg - сдвигает биты регистра на offset влево старшие биты помещаются в младшие rr offset reg - сдвигает биты регистра на offset вправо младшие биты помещаются в старшие</p>
+<p>if flag op - условный префикс. Команда op выполняется если flag (4 бита адресация) регистра FX установлен в 1</p>
+<p>in reg - читает значение из порта в регистр out reg - пишет значение регистра в порт</p>
+<p>стека нет, его легко сэмулировать</p>
+<table>
+<thead>
+<tr class="header">
+<th style="text-align: left;">условный префикс</th>
+<th style="text-align: left;">код команды</th>
+<th style="text-align: left;">reg1/bit/offset</th>
+<th style="text-align: left;">reg2</th>
+<th style="text-align: center;">доп. операнд(16 бит)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">x x x x</td>
+<td style="text-align: left;">x x x x</td>
+<td style="text-align: left;">x x x x</td>
+<td style="text-align: left;">x x x x</td>
+<td style="text-align: center;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">let</td>
+<td style="text-align: left;">reg</td>
+<td style="text-align: left;">0 0 0 0</td>
+<td style="text-align: center;">value</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">ld</td>
+<td style="text-align: left;">reg1</td>
+<td style="text-align: left;">reg2</td>
+<td style="text-align: center;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">save</td>
+<td style="text-align: left;">reg1</td>
+<td style="text-align: left;">reg2</td>
+<td style="text-align: center;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">cp</td>
+<td style="text-align: left;">reg1</td>
+<td style="text-align: left;">reg2</td>
+<td style="text-align: center;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: center;">-</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">add</td>
+<td style="text-align: left;">reg1</td>
+<td style="text-align: left;">reg2</td>
+<td style="text-align: center;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">sub</td>
+<td style="text-align: left;">reg1</td>
+<td style="text-align: left;">reg2</td>
+<td style="text-align: center;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: center;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">and</td>
+<td style="text-align: left;">reg1</td>
+<td style="text-align: left;">reg2</td>
+<td style="text-align: center;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">or</td>
+<td style="text-align: left;">reg1</td>
+<td style="text-align: left;">reg2</td>
+<td style="text-align: center;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">xor</td>
+<td style="text-align: left;">reg1</td>
+<td style="text-align: left;">reg2</td>
+<td style="text-align: center;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">not</td>
+<td style="text-align: left;">reg</td>
+<td style="text-align: left;">0 0 0 1</td>
+<td style="text-align: center;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: center;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">test</td>
+<td style="text-align: left;">bit</td>
+<td style="text-align: left;">reg</td>
+<td style="text-align: center;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: center;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">rl</td>
+<td style="text-align: left;">offset</td>
+<td style="text-align: left;">reg</td>
+<td style="text-align: center;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">rr</td>
+<td style="text-align: left;">offset</td>
+<td style="text-align: left;">reg</td>
+<td style="text-align: center;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: center;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">in</td>
+<td style="text-align: left;">reg</td>
+<td style="text-align: left;">0 0 1 0</td>
+<td style="text-align: center;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">out</td>
+<td style="text-align: left;">reg</td>
+<td style="text-align: left;">0 0 1 1</td>
+<td style="text-align: center;"></td>
+</tr>
+</tbody>
+</table>
+<p>осталось пространство для 4-х 2-арных команд + 12-ти 1-арных команд</p>
+<p>Ок, выглядит несложно. Реализация очевидна. Теперь надо понять как будет происходить процесс компиляции.</p>
+    </section>
+</article>
+
+        </main>
+
+        <footer>
+            Site proudly generated by
+            <a href="http://jaspervdj.be/hakyll">Hakyll</a>
+        </footer>
+    </body>
+</html>

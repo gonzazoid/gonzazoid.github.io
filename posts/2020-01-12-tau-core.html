@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="x-ua-compatible" content="ie=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Gonzazoid's blog - <span>&tau;-lang: description</span></title>
+        <link rel="stylesheet" href="../css/default.css" />
+    </head>
+    <body>
+        <header>
+            <div class="logo">
+                <a href="../">Gonzazoid's blog</a>
+            </div>
+            <nav>
+                <a href="../">Index</a>
+                <a href="../resume_ru.html">[ Resume: RU</a>
+                <a href="../resume.html">ENG ]</a>
+                <a href="../contact.html">Contact</a>
+            </nav>
+        </header>
+
+        <main role="main">
+            <h1><span>&tau;-lang: description</span></h1>
+            <article>
+    <section class="header">
+        Posted on January 12, 2020
+        
+    </section>
+    <section>
+        <p>Ниже изложено (неформально) описание τ-lang и стандартного препроцессора (type-checker, proof-checker и структурная индукция в τ-lang не входят и реализуются в τ<sup><small>2</small></sup>-lang). Тут у нас просто интерпретатор на прямой подстановке (term rewriting system).</p>
+<p>Программой на τ-lang является вызов функции с параметрами (apply). Синтаксис языка Lisp/ML-подобный. Кодировка используется <code>utf-8</code> но это соглашение больше часть парсера а не самого языка τ-lang.</p>
+<h3 id="язык-описания-структуры">Язык описания структуры</h3>
+<p>Операторами языка описания структуры являются: обычные скобки - ( ) и НЕКОТОРЫЕ пробельные символы (<a href="https://en.wikipedia.org/wiki/Whitespace_character">whitespace characters</a>) а именно:</p>
+<ul>
+<li>пробел U+0020</li>
+<li>tab \t U+0009</li>
+<li>new line \n U+000A</li>
+<li>carriage return \r U+000D</li>
+</ul>
+<p>В дальнейшем этот набор пробельных символов будет обозначаться как <code>[space]</code>.</p>
+<p>Структура - это важно. В тот момент когда вам покажется что программа состоит чуть менее чем полностью из скобочек - вспомните о том сколько операторов описания структуры вы имеете в обычном языке программирования - помимо скобок и пробельных символов у вас есть еще как минимум: <code>[ ] { } ; , ' &quot;</code> и это лишь малая их часть. Во многих языках операторы структуры прячутся в ключевых словах, в других операторах которые на самом деле являются функциями, в ограничениях на имена переменных и тому подобное.</p>
+<p>В τ-lang как и в lisp любая структура описывается скобками. Собственно на этом схожесть с lisp заканчивается.</p>
+<h3 id="идентификаторы">Идентификаторы</h3>
+<p>Идентификатор (имя параметра) может быть любой комбинацией любых символов utf‑8 кроме:</p>
+<ul>
+<li><code>[space]</code></li>
+<li>скобок <code>( )</code></li>
+</ul>
+<p>Служебные идентификаторы:</p>
+<ul>
+<li><code>=&gt;</code></li>
+<li><code>match</code></li>
+<li><code>|</code></li>
+<li><code>_</code></li>
+<li><code>*</code></li>
+</ul>
+<p>Идентификатор, объявленный пользователем, не может быть комбинацией символов <code>=&gt;</code> но может их содержать, т.е. <code>1=&gt;</code>, <code>=&gt;e</code>, <code>a=&gt;b</code> - валидные идентификаторы. Тоже справедливо и для остальных служебных идентификаторов.</p>
+<p>Идентификаторы <code>match</code> и <code>|</code> зарезервированы для синтаксиса <code>function definition</code>.</p>
+<p>Идентификатор <code>_</code> зарезервирован и имеет особое значение:</p>
+<ul>
+<li>в объявлении функции как имя параметра - указывает на то что параметр в теле функции не используется</li>
+<li>в вызове функции (<code>apply</code>) в качестве аргумента - указывает на отсутствие аргумента и превращает <code>apply</code> в <code>partial apply</code></li>
+<li>в левой части <code>clause</code> - указывает на совпадение с любым символом (<code>polymorphic match</code>)</li>
+<li>в правой части <code>clause</code> - соответствует тому символу который дал совпадение (в левой части также должен быть <code>_</code>)</li>
+</ul>
+<p>Идентификатор <code>*</code> является квантором всеобщности (∀) в τ<sup><small>2</small></sup>-lang и в τ-lang никак не участвует, тем не менее идентификатор зарезервирован в целях совместимости парсеров.</p>
+<h4 id="let">let</h4>
+<p>Явного создания переменных/констант в языке нет (то есть нет let), неявное присваивание происходит при вызове функции либо pattern-matching-е.</p>
+<ul>
+<li>при вызове функции переданные значения привязываются к именам параметров объявленным в definition функции</li>
+<li>pattern-matching рассматривается в function definition.</li>
+</ul>
+<p>Других способов связать значение с именем - нет. Как следствие - переприсваивания в языке нет, все метки по определению - константы. Так же нет понятия ссылок и указателей - все параметры передаются по значению, по крайней мере это так выглядит. Что происходит под капотом не имеет значения если это соглашение выполняется.</p>
+<h3 id="функции">Функции</h3>
+<p>Функция объявляется так:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode ml"><code class="sourceCode ocaml"><a class="sourceLine" id="cb1-1" title="1">(param1 param2 ... paramN =&gt; <span class="kw">function</span> body)</a></code></pre></div>
+<p>В теле функции видны только символы переданные в качестве параметров. Какого либо глобального контекста нет. Любой неизвестный символ в теле функции (справа от <code>=&gt;</code>) трактуется как <em>constructor ground term</em> (<code>CGT</code>).</p>
+<p>Важное следствие - рекурсивных функций не бывает, так как в теле функции не виден символ под которым она объявлена (точнее нет символа в момент объявления, привязка к символу может произойти только в момент <code>apply</code>). Рекурсивным может быть только вызов а не сама функция. Рекурсивным вызовом является вызов функции при котором в функцию одним из параметров передается символ под которым она объявлена И при этом в последующей цепочке вызовов эта функция вновь вызывается. То есть передача функции параметром не делает вызов автоматически рекурсивным - если функция не вызывается в дальнейшем.</p>
+<p>Есть два способа объявить функцию - function definition и functions composition.</p>
+<h4 id="function-definition">Function definition:</h4>
+<div class="sourceCode" id="cb2"><pre class="sourceCode ml"><code class="sourceCode ocaml"><a class="sourceLine" id="cb2-1" title="1">(sum a b =&gt;</a>
+<a class="sourceLine" id="cb2-2" title="2">    <span class="kw">match</span> a</a>
+<a class="sourceLine" id="cb2-3" title="3">    | O =&gt; b</a>
+<a class="sourceLine" id="cb2-4" title="4">    | S a' =&gt; S (sum sum a' b)</a>
+<a class="sourceLine" id="cb2-5" title="5">)</a></code></pre></div>
+<p><code>match</code> может выполняться только по одному параметру, только по одному и только по параметру, нельзя указать в <code>match</code> выражение. То есть параметр match должен быть вычисленным за пределами функции значением. Это важно.</p>
+<p>В τ-lang деструктуризации на функциях нет (одна из причин существования τ<sup><small>2</small></sup>-lang), то есть аргумент для <code>match</code> не может быть <code>function definition</code> или <code>functions composition</code>.</p>
+<p>Если в параметре <code>match</code> встречается символ для которого нет шаблона ни в одном из клозов - считается что функция не определена на данном значении, выполнение аварийно завершается а исходник, вызвавший ошибку, перестает считаться τ-lang кодом. Это важное поведение - именно этим match отличается от прямой подстановки - контроль структуры. Подробности раскрыты в <a href="../posts/2020-01-10-tau-usage.html">практике применения</a>.</p>
+<p>Число параметров имеет значение: структура <code>(S S O)</code> не совпадет с паттерном <code>S a'</code> так как паттерн предполагает наличие одного аргумента в то время как <code>(S S O)</code> содержит два аргумента. Для матчинга этой структуры необходим паттерн <code>S a' b'</code>.</p>
+<p>Можно объявлять несколько клозов на один и тот же конструктор если в паттерне указано разное число параметров, например так:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode ml"><code class="sourceCode ocaml"><a class="sourceLine" id="cb3-1" title="1">(someStrangeFunction a b =&gt;</a>
+<a class="sourceLine" id="cb3-2" title="2">    <span class="kw">match</span> a</a>
+<a class="sourceLine" id="cb3-3" title="3">    | O =&gt; b</a>
+<a class="sourceLine" id="cb3-4" title="4">    | O tail =&gt; tail</a>
+<a class="sourceLine" id="cb3-5" title="5">    | O head tail =&gt; tail</a>
+<a class="sourceLine" id="cb3-6" title="6">    | S a' =&gt; S (someStrangeFunction someStrangeFunction a' b)</a>
+<a class="sourceLine" id="cb3-7" title="7">)</a></code></pre></div>
+<p>Функции с переменным числом параметров (и матчинг переменного числа параметров, в том смысле что число параметров на момент объявления функции неизвестно) не поддерживаются, это поведение можно сэмулировать компонуя параметры в списки и иные структуры.</p>
+<p>Проверка паттернов происходит в порядке их объявления.</p>
+<h4 id="functions-composition">Functions composition:</h4>
+<div class="sourceCode" id="cb4"><pre class="sourceCode ml"><code class="sourceCode ocaml"><a class="sourceLine" id="cb4-1" title="1">(sum a b =&gt; sum sum a b)</a></code></pre></div>
+<p>часть справа от <code>=&gt;</code> является вызовом функции (<code>apply</code>).</p>
+<h4 id="partial-apply."><code>partial apply</code>.</h4>
+<p>Идентификатор <code>_</code> при вызове функции имеет особое значение и показывает отсутствие аргумента. Если функция вызвана с числом аргументов меньшим чем указано в сигнатуре и/или в переданных аргументах присутствуют идентификаторы <code>_</code> - вызов трактуется как <code>partial apply</code> и вычисленным значением этого <code>apply</code> будет функция. Например вот этот <code>apply</code>:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode ml"><code class="sourceCode ocaml"><a class="sourceLine" id="cb5-1" title="1">(some_func a b =&gt; some_func a b) _ EMPTY</a></code></pre></div>
+<p>вернет функцию аналогичную объявлению:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode ml"><code class="sourceCode ocaml"><a class="sourceLine" id="cb6-1" title="1">(some_func a =&gt; some_func a EMPTY)</a></code></pre></div>
+<p>При таком вызове:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode ml"><code class="sourceCode ocaml"><a class="sourceLine" id="cb7-1" title="1">(some_func a b =&gt; some_func a b) EMPTY</a></code></pre></div>
+<p>вернется:</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode ml"><code class="sourceCode ocaml"><a class="sourceLine" id="cb8-1" title="1">(some_func b =&gt; some_func EMPTY b)</a></code></pre></div>
+<p>Аналогично <code>partial apply</code> работает и на <code>function definition</code>. Особого внимания требует только момент <code>partial apply</code> на параметре <code>match</code> - в этом случае <code>function definition</code> превращается в <code>functions composition</code>:</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode ml"><code class="sourceCode ocaml"><a class="sourceLine" id="cb9-1" title="1">(sum a b =&gt;</a>
+<a class="sourceLine" id="cb9-2" title="2">    <span class="kw">match</span> a</a>
+<a class="sourceLine" id="cb9-3" title="3">    | O =&gt; b</a>
+<a class="sourceLine" id="cb9-4" title="4">    | S a' =&gt; S (sum sum a' b)</a>
+<a class="sourceLine" id="cb9-5" title="5">) _ O _</a></code></pre></div>
+<p>вернет функцию аналогичную:</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode ml"><code class="sourceCode ocaml"><a class="sourceLine" id="cb10-1" title="1">(_ b =&gt; b)</a></code></pre></div>
+<p>Стоит обратить внимание что первый параметр никуда не делся несмотря на то что он не используется - сигнатура сократилась только на явно указанный при вызове параметр. Но поскольку первый параметр не используется - идентификатор <code>sum</code> заменился на идентификатор <code>_</code>.</p>
+<p><code>partial apply</code> затрагивающий другой <code>clause</code>:</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode ml"><code class="sourceCode ocaml"><a class="sourceLine" id="cb11-1" title="1">(sum a b =&gt;</a>
+<a class="sourceLine" id="cb11-2" title="2">    <span class="kw">match</span> a</a>
+<a class="sourceLine" id="cb11-3" title="3">    | O =&gt; b</a>
+<a class="sourceLine" id="cb11-4" title="4">    | S a' =&gt; S (sum sum a' b)</a>
+<a class="sourceLine" id="cb11-5" title="5">) _ (S(O)) _</a></code></pre></div>
+<p>В этом случае возвращаемый результат аналогичен такому коду:</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode ml"><code class="sourceCode ocaml"><a class="sourceLine" id="cb12-1" title="1">(sum b =&gt; S (sum sum O b))</a></code></pre></div>
+<h4 id="polymorphic-match">polymorphic match</h4>
+<p>В <code>function definition</code> в деструктуризации параметра также можно использовать идентификатор <code>_</code>:</p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode ml"><code class="sourceCode ocaml"><a class="sourceLine" id="cb13-1" title="1">(double a =&gt;</a>
+<a class="sourceLine" id="cb13-2" title="2">    <span class="kw">match</span> a</a>
+<a class="sourceLine" id="cb13-3" title="3">    | O =&gt; O</a>
+<a class="sourceLine" id="cb13-4" title="4">    | _ a' =&gt; _ ( _ (double a'))</a>
+<a class="sourceLine" id="cb13-5" title="5">)</a></code></pre></div>
+<p>В левой части клоза <code>_</code> обозначает соответствие любому символу. В правой части клоза вместо <code>_</code> подставляется символ который попал в клоз. Описанная выше функция будет работать с любой структурой заканчивающейся на O:</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode ml"><code class="sourceCode ocaml"><a class="sourceLine" id="cb14-1" title="1">(a =&gt;</a>
+<a class="sourceLine" id="cb14-2" title="2">    (double a =&gt; double double a)</a>
+<a class="sourceLine" id="cb14-3" title="3">    (double a =&gt;</a>
+<a class="sourceLine" id="cb14-4" title="4">        <span class="kw">match</span> a</a>
+<a class="sourceLine" id="cb14-5" title="5">        | O =&gt; O</a>
+<a class="sourceLine" id="cb14-6" title="6">        | _ a' =&gt; _ ( _ (double a'))</a>
+<a class="sourceLine" id="cb14-7" title="7">    )</a>
+<a class="sourceLine" id="cb14-8" title="8">    a</a>
+<a class="sourceLine" id="cb14-9" title="9">) (S(S O))</a></code></pre></div>
+<p>вернет <code>(S(S(S(S O))))</code> В тоже время мы можем вызвать эту функцию на другой структуре:</p>
+<pre class="ml```"><code>(a =&gt;
+    (double a =&gt; double double a)
+    (double a =&gt;
+        match a
+        | O =&gt; O
+        | _ a' =&gt; _ ( _ (double a'))
+    )
+    a
+) (L(L O))</code></pre>
+<p>И получить <code>(L(L(L(L O))))</code> Или даже так:</p>
+<pre class="ml```"><code>(a =&gt;
+    (double a =&gt; double double a)
+    (double a =&gt;
+        match a
+        | O =&gt; O
+        | _ a' =&gt; _ ( _ (double a'))
+    )
+    a
+) (L(S O))</code></pre>
+<p>что даст <code>(L(L(S(S O))))</code></p>
+<p>Идентификатор <code>_</code> используется только для конструктора, то есть может стоять только первым id в clause.</p>
+<h3 id="препроцессор">препроцессор</h3>
+<p>Собственно все, если вы поняли о чем идет речь - поздравляю, вы только что освоили радикально функциональный язык <em>моделирования</em> τ-lang.</p>
+    </section>
+</article>
+
+        </main>
+
+        <footer>
+            Site proudly generated by
+            <a href="http://jaspervdj.be/hakyll">Hakyll</a>
+        </footer>
+    </body>
+</html>

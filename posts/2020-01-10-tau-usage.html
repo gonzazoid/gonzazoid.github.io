@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="x-ua-compatible" content="ie=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Gonzazoid's blog - <span>&tau;-lang: usage</span></title>
+        <link rel="stylesheet" href="../css/default.css" />
+    </head>
+    <body>
+        <header>
+            <div class="logo">
+                <a href="../">Gonzazoid's blog</a>
+            </div>
+            <nav>
+                <a href="../">Index</a>
+                <a href="../resume_ru.html">[ Resume: RU</a>
+                <a href="../resume.html">ENG ]</a>
+                <a href="../contact.html">Contact</a>
+            </nav>
+        </header>
+
+        <main role="main">
+            <h1><span>&tau;-lang: usage</span></h1>
+            <article>
+    <section class="header">
+        Posted on January 10, 2020
+        
+    </section>
+    <section>
+        <p>Практика применения.</p>
+<p>Рассмотрим сначала обвязку функций. Вот пример <code>apply</code> функции складывающей два натуральных числа:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode ml"><code class="sourceCode ocaml"><a class="sourceLine" id="cb1-1" title="1">(sum a b =&gt; </a>
+<a class="sourceLine" id="cb1-2" title="2">    <span class="kw">match</span> a</a>
+<a class="sourceLine" id="cb1-3" title="3">        | O =&gt; b</a>
+<a class="sourceLine" id="cb1-4" title="4">        | S a' =&gt; S (sum sum a' b)</a>
+<a class="sourceLine" id="cb1-5" title="5">)</a>
+<a class="sourceLine" id="cb1-6" title="6">(sum a b =&gt; </a>
+<a class="sourceLine" id="cb1-7" title="7">    <span class="kw">match</span> a</a>
+<a class="sourceLine" id="cb1-8" title="8">        | O =&gt; b</a>
+<a class="sourceLine" id="cb1-9" title="9">        | S a' =&gt; S (sum sum a' b)</a>
+<a class="sourceLine" id="cb1-10" title="10">)</a>
+<a class="sourceLine" id="cb1-11" title="11">(S(S O))</a>
+<a class="sourceLine" id="cb1-12" title="12">(S(S(S O)))</a></code></pre></div>
+<p>Результат вызова: <code>(S(S(S(S(S O)))))</code></p>
+<p>Выглядит не очень. Мы объявляем функцию sum, но поскольку рекурсивных объявлений у нас нет а сложение - рекурсивная операция, мы вынуждены передавать объявление функции в саму функцию при ее вызове. Но это можно сделать более компактно и спрятать параметр sum от внешнего мира:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode ml"><code class="sourceCode ocaml"><a class="sourceLine" id="cb2-1" title="1">(a b =&gt;</a>
+<a class="sourceLine" id="cb2-2" title="2">    (sum a b =&gt; sum sum a b)</a>
+<a class="sourceLine" id="cb2-3" title="3">    (sum a b =&gt;</a>
+<a class="sourceLine" id="cb2-4" title="4">        <span class="kw">match</span> a</a>
+<a class="sourceLine" id="cb2-5" title="5">        | O =&gt; b</a>
+<a class="sourceLine" id="cb2-6" title="6">        | S a' =&gt; S (sum sum a' b)</a>
+<a class="sourceLine" id="cb2-7" title="7">    )</a>
+<a class="sourceLine" id="cb2-8" title="8">    a</a>
+<a class="sourceLine" id="cb2-9" title="9">    b</a>
+<a class="sourceLine" id="cb2-10" title="10">)</a></code></pre></div>
+<p>Что здесь происходит? Объявляется функция у которой два параметра - a и b (складываемые числа), при этом телом функции является композиция функций (<code>apply</code>) в котором функцией является еще одно объявление функции: <code>(sum a b =&gt; sum sum a b)</code></p>
+<p>Вызов (3+2):</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode ml"><code class="sourceCode ocaml"><a class="sourceLine" id="cb3-1" title="1">(a b =&gt;</a>
+<a class="sourceLine" id="cb3-2" title="2">  (sum a b =&gt; sum sum a b)</a>
+<a class="sourceLine" id="cb3-3" title="3">    (sum a b =&gt;</a>
+<a class="sourceLine" id="cb3-4" title="4">        <span class="kw">match</span> a</a>
+<a class="sourceLine" id="cb3-5" title="5">        | O =&gt; b</a>
+<a class="sourceLine" id="cb3-6" title="6">        | S a' =&gt; S (sum sum a' b)</a>
+<a class="sourceLine" id="cb3-7" title="7">    )</a>
+<a class="sourceLine" id="cb3-8" title="8">    a</a>
+<a class="sourceLine" id="cb3-9" title="9">    b</a>
+<a class="sourceLine" id="cb3-10" title="10">)</a>
+<a class="sourceLine" id="cb3-11" title="11">(S (S (S O)))</a>
+<a class="sourceLine" id="cb3-12" title="12">(S (S O))</a></code></pre></div>
+<p>Рассмотрим код сортировки списка натуральных чисел:</p>
+<pre><code>    ( list =&gt;
+        (sort join filter lt ge list =&gt; sort sort join filter lt ge list)
+        (sort join filter lt ge list =&gt;
+            match list
+            | EMPTY =&gt; EMPTY
+            | L head tail =&gt; join (sort sort join filter lt ge (filter tail (lt _ head)))
+                                  (L head (sort sort join filter lt ge (filter tail ( ge _ head))))
+        )
+        (list1 list2 =&gt;
+            (join list1 list2 =&gt; join join list1 list2)
+            ( join list1 list2 =&gt;
+                match list1
+                | EMPTY =&gt; list2
+                | L head tail =&gt; L head (join join tail list2)
+            )
+            list1
+            list2
+        )
+        (list predicate =&gt;
+            ( filter filter' predicate list =&gt;
+                match list
+                | EMPTY =&gt; EMPTY
+                | L head tail =&gt; filter' ( filter filter filter' predicate tail ) head (predicate head) 
+            )
+            ( filter filter' predicate list =&gt;
+                match list
+                | EMPTY =&gt; EMPTY
+                | L head tail =&gt; filter' ( filter filter filter' predicate tail ) head (predicate head) 
+            )
+            ( list elem flag =&gt;
+                match flag
+                | true =&gt; L elem list
+                | false =&gt; list
+            )
+            predicate
+            list
+        )
+        ( a b =&gt;
+            (lt lt' a b =&gt; lt lt lt' a b)
+            ( lt lt' a b =&gt;
+                match b
+                | O =&gt; false
+                | S b' =&gt; lt' lt' lt a b'
+            )
+            (lt' lt a b' =&gt;
+                match a
+                | O =&gt; true
+                | S a' =&gt; lt lt lt' a' b'
+            )
+            a
+            b
+        )
+        ( a b =&gt;
+            (ge ge' isZero a b =&gt; ge ge ge' isZero a b)
+            ( ge ge' isZero a b =&gt;
+                match a
+                | O =&gt; isZero b
+                | S a' =&gt; ge' ge' ge isZero a' b
+            )
+            (ge' ge isZero a' b =&gt;
+                match b
+                | O =&gt; true
+                | S b' =&gt; ge ge ge' isZero a' b'
+            )
+            (x =&gt;
+                match x
+                | O =&gt; true
+                | S x' =&gt; false
+            )
+            a
+            b
+        )
+        list
+    )
+    (L (S(S(S(O)))) (L (S(S(S(S(S(O)))))) (L (S(S(S(S(O))))) (L (S(S O)) EMPTY))))</code></pre>
+<p>Натуральные числа, тип boolean и списки мы задаем индуктивно, в синтаксисе Coq это выглядело бы так:</p>
+<pre class="coq"><code>
+Inductive bool : Type :=
+  | true
+  | false.
+
+Inductive nat : Type :=
+  | O
+  | S (n : nat).
+
+Inductive list : Type :=
+  | EMPTY
+  | L (head : nat) (tail: list).
+</code></pre>
+<p>Мы рассматриваем τ-lang без типов, типы в синтаксисе Coq приведены для понимания структуры данных с которыми работает сортировка.</p>
+<hr />
+<p>Мысль. Тьюринг полнотой обладает не только язык но и модель. То есть Тьюринг полнота языка указывает на возможность реализовать модель машины Тьюринга. На которой можно запустить процесс анадогичный доказательству отсутствия оракула. Но при этом интерпретатор языка сам по себе может не обладать Тьюринг полнотой, то есть непосредственно на самом языке нельзя написать программу аналогичную примеру из доказательства отсутствия оракула. Но можно создать Тьюринг полную модель, которая на определенных входных данных поведет себя так же как доказательство отсутствия оракула.</p>
+<p>Нет, не так. Язык обладает Тьюринг полнотой, так как на нем можно написать модель машины Тьюринга. Кроме Тьюринг полноты есть еще одно свойство которое позволяет привести абсурдный пример с доказательством отсутствия оракула. То есть рефлексия, возможность модели изучать собственные свойства. Вооот! Тьюринг полнота + рефлексия. То есть если реализована Тьюринг полная модель - то там уже будет рефлексия. Интерпретатор Тьюринг полный, но модель самого интерпретатора - без рефлексии, то есть модели функций написанные на нем не имеют доступа к собственным свойствам. Что не мешает при их помощи написать модель машины Тьюринга с рефлексией и устроить абсурд на ней.</p>
+<hr />
+<h3 id="моделирование">Моделирование</h3>
+<p>Числа, строки, функции являются абстрактными понятиями. То есть мы не знаем фактически ЧТО они такое. Есть какие то свойства этих понятий которые нас интересуют но все эти свойства указывают на внешние проявления этих понятий. Мы не знаем внутренней структуры этих понятий, для нас ее не существует и все абстрактые понятия для нас - сингулярны, неделимы и непостижимы. Все то с чем мы работаем на самом деле является моделями этих абстрактных понятий. И при моделировании очень важно разделять свойства самой модели от моделируемых свойств абстрактного понятия (эталона).</p>
+<p>Функции в программировании являются моделями функций в математическом значении. (в дальнейшем под словом функция я подразумеваю абстрактное математическое понятие). Наиболее важным свойством модели отсутствующим у функции является разнесенность во времени. У модели при вычислении результата можно выделить начало вычислений, процесс вычислений, возврат результата. У функции нет до или после - мы применяем функцию к какому либо значению из области определения и получаем результат из области значений. Это атомарная операция, нет ни до ни после ни во время.</p>
+<p>Это наблюдение имеет важное следствие - halting problem не является проблемой функции, это проблема модели. Если у нас есть функнция и значение из области определения - мы всегда получим значение из области значений. Для функции может быть проблемой выразить область определения/значений, но это совсем другая проблема. Таким образом пытаясь так или иначе решить halting problem мы всегда анализируем модели функций, причем анализируем именно собственные свойства этих моделей (точнее будет сказать - мы анализируем модели и пытаемся понять моделями чего они являются, так как не все модели моделируют функции).</p>
+<hr />
+<h3 id="интроспекция-и-рефлексия">Интроспекция и рефлексия</h3>
+<p>весь код анализа можно написать на самом τ-lang. Есть два варианта - сделать замыкание (рефлексию) или проброс механики интерпретатора в язык (то есть получить доступ из языка к внутренним структурам интерпретатора) либо (более интересный вариант) - реализовать интерпретатор языка на нем самом и анализировать не программы написанные на τ-lang для собственно интерпретатора а программы написанные для модели интерпретатора написанного на τ-lang. При этом и сам интерпретатор и анализируемы программы и код анализ - все реализуемо на одном языке.</p>
+<h3 id="язык-описания-структуры">язык описания структуры</h3>
+<p>Обычные скобки и перечисление символов фактически является описанием кортежа. При помощи кортежа можно(за счет вложенности) описать дерево, а при помощи кортежа и дерева - описать или смоделировать (это не одно и то же) любую другую структуру. Например числа Пеано - это дерево, у которого у каждого узла есть только одна ветка, при этом у всего дерева только один лист с символом-терминатором. Каждый узел дерева является пустым кортежем, значение числа моделируется через число веток дерева.</p>
+<pre><code>(S (S (S O)))
+
+ S
+  \
+   S
+    \
+     S
+      \
+       O</code></pre>
+<p>Список - точно такая же структура, только каждый узел имеет кроме одного потомка еще и значение (в зависимости от типа списка). Вот пример списка чисел:</p>
+<pre><code>(L (S(S O)) (L (S O) EMPTY))
+
+ L-[ (S(S O)) ]
+  \
+   L-[ (S O) ]
+    \
+     EMPTY</code></pre>
+<p>В чем разница между описать и смоделировать? Посмотрите внимательно на список - через что он выражен? На самом деле мы видим обычный кортеж из трех элементов - первым идет L - конструктор списка, вторым число и третий элемент - еще один список. Так вот списком этот кортеж становиться только потому что согласились его так воспринимать (и написали какойто код который восприимает третий элемент кортежа как продолжение списка). Это - модель списка, сам язык не позволяет нам выразить(описать) список, и мы моделируем список через кортежи.</p>
+    </section>
+</article>
+
+        </main>
+
+        <footer>
+            Site proudly generated by
+            <a href="http://jaspervdj.be/hakyll">Hakyll</a>
+        </footer>
+    </body>
+</html>
