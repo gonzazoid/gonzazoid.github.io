@@ -105,45 +105,29 @@
 <p>Идентификатор <code>_</code> при вызове функции имеет особое значение и показывает отсутствие аргумента. Если функция вызвана с числом аргументов меньшим чем указано в сигнатуре и/или в переданных аргументах присутствуют идентификаторы <code>_</code> - вызов трактуется как <code>partial apply</code> и вычисленным значением этого <code>apply</code> будет функция. Например вот этот <code>apply</code>:</p>
 <div class="sourceCode" id="cb5"><pre class="sourceCode ml"><code class="sourceCode ocaml"><a class="sourceLine" id="cb5-1" title="1">(some_func a b =&gt; some_func a b) _ EMPTY</a></code></pre></div>
 <p>вернет функцию аналогичную объявлению:</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode ml"><code class="sourceCode ocaml"><a class="sourceLine" id="cb6-1" title="1">(some_func a =&gt; some_func a EMPTY)</a></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode ml"><code class="sourceCode ocaml"><a class="sourceLine" id="cb6-1" title="1">(some_func b =&gt; (some_func a b =&gt; some_func a b) some_func EMPTY b)</a></code></pre></div>
 <p>При таком вызове:</p>
 <div class="sourceCode" id="cb7"><pre class="sourceCode ml"><code class="sourceCode ocaml"><a class="sourceLine" id="cb7-1" title="1">(some_func a b =&gt; some_func a b) EMPTY</a></code></pre></div>
 <p>вернется:</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode ml"><code class="sourceCode ocaml"><a class="sourceLine" id="cb8-1" title="1">(some_func b =&gt; some_func EMPTY b)</a></code></pre></div>
-<p>Аналогично <code>partial apply</code> работает и на <code>function definition</code>. Особого внимания требует только момент <code>partial apply</code> на параметре <code>match</code> - в этом случае <code>function definition</code> превращается в <code>functions composition</code>:</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode ml"><code class="sourceCode ocaml"><a class="sourceLine" id="cb9-1" title="1">(sum a b =&gt;</a>
-<a class="sourceLine" id="cb9-2" title="2">    <span class="kw">match</span> a</a>
-<a class="sourceLine" id="cb9-3" title="3">    | O =&gt; b</a>
-<a class="sourceLine" id="cb9-4" title="4">    | S a' =&gt; S (sum sum a' b)</a>
-<a class="sourceLine" id="cb9-5" title="5">) _ O _</a></code></pre></div>
-<p>вернет функцию аналогичную:</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode ml"><code class="sourceCode ocaml"><a class="sourceLine" id="cb10-1" title="1">(_ b =&gt; b)</a></code></pre></div>
-<p>Стоит обратить внимание что первый параметр никуда не делся несмотря на то что он не используется - сигнатура сократилась только на явно указанный при вызове параметр. Но поскольку первый параметр не используется - идентификатор <code>sum</code> заменился на идентификатор <code>_</code>.</p>
-<p><code>partial apply</code> затрагивающий другой <code>clause</code>:</p>
-<div class="sourceCode" id="cb11"><pre class="sourceCode ml"><code class="sourceCode ocaml"><a class="sourceLine" id="cb11-1" title="1">(sum a b =&gt;</a>
-<a class="sourceLine" id="cb11-2" title="2">    <span class="kw">match</span> a</a>
-<a class="sourceLine" id="cb11-3" title="3">    | O =&gt; b</a>
-<a class="sourceLine" id="cb11-4" title="4">    | S a' =&gt; S (sum sum a' b)</a>
-<a class="sourceLine" id="cb11-5" title="5">) _ (S(O)) _</a></code></pre></div>
-<p>В этом случае возвращаемый результат аналогичен такому коду:</p>
-<div class="sourceCode" id="cb12"><pre class="sourceCode ml"><code class="sourceCode ocaml"><a class="sourceLine" id="cb12-1" title="1">(sum b =&gt; S (sum sum O b))</a></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode ml"><code class="sourceCode ocaml"><a class="sourceLine" id="cb8-1" title="1">(a b =&gt; (some_func a b =&gt; some_func a b) EMPTY a b)</a></code></pre></div>
+<p>Аналогично <code>partial apply</code> работает и на <code>function definition</code>.</p>
 <h4 id="polymorphic-match">polymorphic match</h4>
 <p>В <code>function definition</code> в деструктуризации параметра также можно использовать идентификатор <code>_</code>:</p>
-<div class="sourceCode" id="cb13"><pre class="sourceCode ml"><code class="sourceCode ocaml"><a class="sourceLine" id="cb13-1" title="1">(double a =&gt;</a>
-<a class="sourceLine" id="cb13-2" title="2">    <span class="kw">match</span> a</a>
-<a class="sourceLine" id="cb13-3" title="3">    | O =&gt; O</a>
-<a class="sourceLine" id="cb13-4" title="4">    | _ a' =&gt; _ ( _ (double a'))</a>
-<a class="sourceLine" id="cb13-5" title="5">)</a></code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode ml"><code class="sourceCode ocaml"><a class="sourceLine" id="cb9-1" title="1">(double a =&gt;</a>
+<a class="sourceLine" id="cb9-2" title="2">    <span class="kw">match</span> a</a>
+<a class="sourceLine" id="cb9-3" title="3">    | O =&gt; O</a>
+<a class="sourceLine" id="cb9-4" title="4">    | _ a' =&gt; _ ( _ (double a'))</a>
+<a class="sourceLine" id="cb9-5" title="5">)</a></code></pre></div>
 <p>В левой части клоза <code>_</code> обозначает соответствие любому символу. В правой части клоза вместо <code>_</code> подставляется символ который попал в клоз. Описанная выше функция будет работать с любой структурой заканчивающейся на O:</p>
-<div class="sourceCode" id="cb14"><pre class="sourceCode ml"><code class="sourceCode ocaml"><a class="sourceLine" id="cb14-1" title="1">(a =&gt;</a>
-<a class="sourceLine" id="cb14-2" title="2">    (double a =&gt; double double a)</a>
-<a class="sourceLine" id="cb14-3" title="3">    (double a =&gt;</a>
-<a class="sourceLine" id="cb14-4" title="4">        <span class="kw">match</span> a</a>
-<a class="sourceLine" id="cb14-5" title="5">        | O =&gt; O</a>
-<a class="sourceLine" id="cb14-6" title="6">        | _ a' =&gt; _ ( _ (double a'))</a>
-<a class="sourceLine" id="cb14-7" title="7">    )</a>
-<a class="sourceLine" id="cb14-8" title="8">    a</a>
-<a class="sourceLine" id="cb14-9" title="9">) (S(S O))</a></code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode ml"><code class="sourceCode ocaml"><a class="sourceLine" id="cb10-1" title="1">(a =&gt;</a>
+<a class="sourceLine" id="cb10-2" title="2">    (double a =&gt; double double a)</a>
+<a class="sourceLine" id="cb10-3" title="3">    (double a =&gt;</a>
+<a class="sourceLine" id="cb10-4" title="4">        <span class="kw">match</span> a</a>
+<a class="sourceLine" id="cb10-5" title="5">        | O =&gt; O</a>
+<a class="sourceLine" id="cb10-6" title="6">        | _ a' =&gt; _ ( _ (double a'))</a>
+<a class="sourceLine" id="cb10-7" title="7">    )</a>
+<a class="sourceLine" id="cb10-8" title="8">    a</a>
+<a class="sourceLine" id="cb10-9" title="9">) (S(S O))</a></code></pre></div>
 <p>вернет <code>(S(S(S(S O))))</code> В тоже время мы можем вызвать эту функцию на другой структуре:</p>
 <pre class="ml```"><code>(a =&gt;
     (double a =&gt; double double a)
