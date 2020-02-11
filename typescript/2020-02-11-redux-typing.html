@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="x-ua-compatible" content="ie=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Gonzazoid's blog - <span>Типизация редакса</span></title>
+        <link rel="stylesheet" href="../css/default.css" />
+    </head>
+    <body>
+        <header>
+            <div class="logo">
+                <a href="../">Gonzazoid's blog</a>
+            </div>
+            <nav>
+                <a href="../">Index</a>
+                <a href="../resume_ru.html">[ Resume: RU</a>
+                <a href="../resume.html">ENG ]</a>
+                <a href="../contact.html">Contact</a>
+            </nav>
+        </header>
+
+        <main role="main">
+            <h1><span>Типизация редакса</span></h1>
+            <article>
+    <section class="header">
+        Posted on February 11, 2020
+        
+    </section>
+    <section>
+        <p>На одном из собесов дали задачку починить простенькое react-приложение с самописным flux-велосипедом. Вот кусок кода (комментарии мои):<br> <br> <img src="../images/typescript/redux-typing/task.png"> <br> На что пришло письмо с комментариями:</p>
+<p><img src="../images/typescript/redux-typing/comments.png"> <br><br></p>
+<p>Ну тут понятно с последним комментарием никак нельзя согласиться. Сборка редьюсеров это никак не код библиотеки общего назначения, это код ИСПОЛЬЗОВАНИЯ библиотеки общего назначения, но это ладно, я готов с этим жить. Но вот проверки в рантайме… Не, я конечно промолчал и на следующий этап кастинга меня позвали, но все таки. В интернете опять кто то неправ… В том смысле что у меня у самого есть такой же код, я не готов спорить на эту тему. Но вот по поводу того что в тайпскрипте нельзя построить систему типов которая будет пресекать и бдить - я не согласен.</p>
+Вот код (рекомендую открыть его <a href="http://www.typescriptlang.org/play/index.html?ssl=24&amp;ssc=52&amp;pln=1&amp;pc=1#code/C4TwDgpgBAEghgOwCYBsICcoF4oAoDOwcwEAXFAMpEkA0UcAxsAJYD2C5Agk2wgJTYAfJWoQA3AChmCEugBmjaPGRp0+KAG8JUHVHwRgAJVZpyy1Bkm69rALYRuLdmcQX0kgL4SpMjAobQVMTQWhJeEgzshFAAFq6q+C4qGOo4Wtb6RibQ5ASipEG09DzOjrwCWMIA8gBGAFYQTAB0cPj4zADmCLgaHnSEwXQaUOjZ5IxOCE0AbnAoAK7QHnzaOjT4dg4lCFC5AyQFonQTvKRl7BXV9Y3ALW2d3b39oivhkQjR6BBI8wGYOHlgodBsVJmdtpdYvEUgBtE7sJqgSAAXUBRXh-G80lk-mg5x26V0SLIUAA1hAQKw5LBoWpVjpZgsSYgQGFvF8fn8en1NFBieQAESZYxoAV0RmLQVwJC2aQCqDLSQc34YblDPngEkCmrS-FiqASrXS2UIeWKoA">здесь</a> ) <br><br>
+<style>
+img { width: 60rem; }
+pre { white-space: pre-wrap; font-family: monospace; color: #000000; background-color: #c0c0c0; }
+#code { padding: 5px;font-family: monospace; color: #000000; background-color: #c0c0c0; }
+* { font-size: 1em; }
+.Constant { color: #c00000; }
+.Special { color: #c000c0; }
+.Identifier { color: #008080; }
+.Statement { color: #af5f00; font-weight: bold; }
+.Type { color: #008000; }
+-->
+</style>
+<script type="text/javascript">
+<!--
+
+-->
+</script>
+</head>
+<div id="code">
+<pre id="vimCodeElement">
+<span class="Statement">type</span> Handler <span class="Statement">=</span> <span class="Statement">(</span>state: State<span class="Statement">,</span> action: Action<span class="Statement">)</span> <span class="Statement">=&gt;</span> State<span class="Statement">;</span>
+
+<span class="Statement">interface</span> Handlers <span class="Identifier">{</span>
+    setRole: Handler<span class="Statement">;</span>
+    someAction: Handler<span class="Statement">;</span>
+<span class="Identifier">}</span>
+
+<span class="Statement">interface</span> State <span class="Identifier">{</span>
+
+<span class="Identifier">}</span>
+
+<span class="Statement">const</span> handlers: Handlers <span class="Statement">=</span> <span class="Identifier">{</span>
+    setRole : <span class="Statement">(</span>state:State<span class="Statement">,</span> action:Action<span class="Statement">)</span> <span class="Statement">=&gt;</span> <span class="Special">Object</span>.assign<span class="Statement">(</span><span class="Identifier">{}</span><span class="Statement">,</span> state<span class="Statement">,</span> <span class="Identifier">{</span> role: action.value <span class="Identifier">}</span><span class="Statement">)</span>
+   <span class="Statement">,</span>someAction : <span class="Statement">(</span>state:State<span class="Statement">,</span> action:Action<span class="Statement">)</span> <span class="Statement">=&gt;</span> <span class="Special">Object</span>.assign<span class="Statement">(</span><span class="Identifier">{}</span><span class="Statement">,</span> state<span class="Statement">)</span>
+<span class="Identifier">}</span>
+
+<span class="Statement">const</span> reducer <span class="Statement">=</span> <span class="Statement">(</span>state:State<span class="Statement">,</span> action:Action<span class="Statement">)</span> <span class="Statement">=&gt;</span> handlers<span class="Identifier">[</span>action.<span class="Statement">type</span><span class="Identifier">]</span><span class="Statement">(</span>state<span class="Statement">,</span> action<span class="Statement">)</span>
+
+<span class="Statement">interface</span> Action <span class="Identifier">{</span>
+    <span class="Statement">type</span>: keyof Handlers
+    value: <span class="Type">any</span>
+<span class="Identifier">}</span>
+
+reducer<span class="Statement">(</span><span class="Identifier">{}</span><span class="Statement">,</span> <span class="Identifier">{</span> <span class="Statement">type</span>: <span class="Constant">&quot;setRole&quot;</span><span class="Statement">,</span> value: <span class="Constant">&quot;admin&quot;</span> <span class="Identifier">}</span><span class="Statement">)</span><span class="Statement">;</span>
+reducer<span class="Statement">(</span><span class="Identifier">{}</span><span class="Statement">,</span> <span class="Identifier">{</span> <span class="Statement">type</span>: <span class="Constant">&quot;badAction&quot;</span><span class="Statement">,</span> value: <span class="Constant">&quot;admin&quot;</span> <span class="Identifier">}</span><span class="Statement">)</span><span class="Statement">;</span>
+</pre>
+</div>
+<p>Видно что компилятор сразу бросает ошибку на “badAction”:</p>
+<p>Как это работает? Если хотим добавить новый редьюсер - добавляем сначала строку вида <code>имя_редьюсера: Handler</code> в интерфейс <code>Handlers</code> и после этого послушно следуем ругани компилятора. Он заругается на то что <code>Property 'имя_редьюсера' is missing in type ...</code> и не успокоится пока мы не добавим новый редьюсер: <br><br> <img src="../images/typescript/redux-typing/error.png"> <br><br> Если мы попытаемся дернуть несуществующий экшин то ругаться компилятор будет вот так: <br><br> <img src="../images/typescript/redux-typing/redux-typing.png" /> <br><br> Если мы удалим запись из интерфейса <code>Handlers</code> но не удалим хандлер из <code>const handlers</code> - получим несоответствие типов. То же самое если сделаем наоборот - удалим из <code>const handlers</code> но не удалим из интерфейса.</p>
+<p>Единственный сценарий который не отслеживается - это когда все у нас хорошо и красиво прописано но нигде в коде не используется.</p>
+<p>Да, это не так удобно как динамичное создание редьюсеров или их merge, не спорю, но если экшинов до 50 - жить можно вполне. Сами хандлеры не обязательно прописывать в одном файле, можно ипортировать. В общем на определенных масштабах вполне себе можно жить и типобезопасно и относительно удобно.</p>
+<p>А идет все это зло с примеров от производителя: <br><br> <img src="../images/typescript/redux-typing/redux-example.png" /> <br><br> Мораль - читая доки иногда стоит и мозг включать.</p>
+    </section>
+</article>
+
+        </main>
+
+        <footer>
+            Site proudly generated by
+            <a href="http://jaspervdj.be/hakyll">Hakyll</a>
+        </footer>
+    </body>
+</html>
