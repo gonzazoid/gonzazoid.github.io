@@ -59,7 +59,7 @@ But, said Alice, if the world has absolutely no sense, who’s stopping us from 
 <p>При попытке записать тип этой модели получаем:</p>
 <div class="sourceCode" id="cb5"><pre class="sourceCode ml"><code class="sourceCode ocaml"><a class="sourceLine" id="cb5-1" title="1">* -&gt; * -&gt; * -&gt; * -&gt; ..... ∞</a></code></pre></div>
 <p>Получаем модель которая на любое значение возвращает саму себя и которая при попытке прочитать ее как функцию не типизируется.</p>
-<p>Только не путайте его с Y-комбинатором из λ-calculus.</p>
+<p>Только не путайте её с Y-комбинатором из λ-calculus.</p>
 <p>Y-комбинатор для терма X - это такой Y что <code>YX = X (YX)</code></p>
 <p>Fixed point для функции F - это такой X что <code>FX = X</code></p>
 <p>В данном случае у нас <code>FX = F</code>, что значит что Infinite Sheldon - это не <a href="https://en.wikipedia.org/wiki/Fixed-point_combinator">комбинатор неподвижной точки</a>, это и не сама <a href="https://en.wikipedia.org/wiki/Fixed_point_(mathematics)">неподвижная точка</a>.</p>
