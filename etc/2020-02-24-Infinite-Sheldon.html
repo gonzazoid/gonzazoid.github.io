@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="x-ua-compatible" content="ie=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Gonzazoid's blog - Infinite Sheldon</title>
+        <link rel="stylesheet" href="../css/default.css" />
+    </head>
+    <body>
+        <header>
+            <div class="logo">
+                <a href="../">Gonzazoid's blog</a>
+            </div>
+            <nav>
+                <a href="../">Index</a>
+                <a href="../resume_ru.html">[ Resume: RU</a>
+                <a href="../resume.html">ENG ]</a>
+                <a href="../contact.html">Contact</a>
+            </nav>
+        </header>
+
+        <main role="main">
+            <h1>Infinite Sheldon</h1>
+            <article>
+    <section class="header">
+        Posted on February 24, 2020
+        
+    </section>
+    <section>
+        <blockquote>
+But, said Alice, if the world has absolutely no sense, who’s stopping us from inventing one?
+<footer>
+—Lewis Caroll, <cite>Alice in Wonderland</cite>
+</footer>
+</blockquote>
+<p>Разрешите представить:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode ml"><code class="sourceCode ocaml"><a class="sourceLine" id="cb1-1" title="1">(a =&gt;</a>
+<a class="sourceLine" id="cb1-2" title="2">    (self a =&gt; self self)</a>
+<a class="sourceLine" id="cb1-3" title="3">    (self a =&gt; self self)</a>
+<a class="sourceLine" id="cb1-4" title="4">    a</a>
+<a class="sourceLine" id="cb1-5" title="5">)</a></code></pre></div>
+<p>Что интересного в этой функции? Много чего, но начнем пожалуй с того что это не функция. Давайте разберем как работает эта модель.</p>
+<p>Выглядит как функция от одного аргумента - <code>a</code>. В теле модели видим объявление:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode ml"><code class="sourceCode ocaml"><a class="sourceLine" id="cb2-1" title="1">    (self a =&gt; self self)</a></code></pre></div>
+<p>Похоже на функцию которая принимает два аргумента - self и a и затем вызывает self, т.е. предполагается что self - функция. Выглядит как обычная fixpoint обвязка. Но давайте посмотрим - что же у нас передается под символом self? Это первый аргумент вызова (вторая строка apply) и это действительно функция (по крайней мере похожа):</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode ml"><code class="sourceCode ocaml"><a class="sourceLine" id="cb3-1" title="1">    (self a =&gt; self self)</a></code></pre></div>
+<p>Хм. То же самое что и в первой строке. Это действительно похоже на fixpoint, но есть отличие. Видя модель (вторая строка) мы можем понять что имеем дело с partial apply (первая строка), так как аргументов у модели - два (self и a) а передается только один - self.</p>
+<p>Что происходит при partial apply? Освежить знания можно <a href="../posts/2020-01-12-tau-core.html">здесь</a>, если в двух словах - возвращается новая функция, у которой в аргументах будут только те переменные которые не были указаны в partial apply, а все что было указано - будет спрятано в теле модели.</p>
+<p>Следовательно <code>self self</code> вернет модель вида:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode ml"><code class="sourceCode ocaml"><a class="sourceLine" id="cb4-1" title="1">(a =&gt;</a>
+<a class="sourceLine" id="cb4-2" title="2">    (self a =&gt; self self)</a>
+<a class="sourceLine" id="cb4-3" title="3">    (self a =&gt; self self)</a>
+<a class="sourceLine" id="cb4-4" title="4">    a</a>
+<a class="sourceLine" id="cb4-5" title="5">)</a></code></pre></div>
+<p>Интересно. Это именно то с чего мы начали. Получается что это функция возвращающая саму себя, независимо от того какой аргумент мы ей передали. Причем это не бесконечно выполняющаяся функция, она строго завершается на любом вызове. Ок.</p>
+<p>Но если это функция - то какой у нее тип? Да без проблем - мы видим что можем передать ей что угодно, то есть область определения у нее - <code>*</code>. А область значений?</p>
+<p>Ну она возвращает сaму себя. То есть значение одно (что то вроде <a href="https://en.wikipedia.org/wiki/Unit_type">unit</a> ) Ок. Но если возвращается функция - то какой тип у возвращаемой функции? Да такой же. На входе <code>*</code>, а на выходе функция. А какого типа функция? И так до бесконечности.</p>
+<p>При попытке записать тип этой модели получаем:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode ml"><code class="sourceCode ocaml"><a class="sourceLine" id="cb5-1" title="1">* -&gt; * -&gt; * -&gt; * -&gt; ..... ∞</a></code></pre></div>
+<p>Получаем модель которая на любое значение возвращает саму себя и которая при попытке прочитать ее как функцию не типизируется.</p>
+<p>Только не путайте его с Y-комбинатором из λ-calculus.</p>
+<p>Y-комбинатор для терма X - это такой Y что <code>YX = X (YX)</code></p>
+<p>Fixed point для функции F - это такой X что <code>FX = X</code></p>
+<p>В данном случае у нас <code>FX = F</code>, что значит что Infinite Sheldon - это не <a href="https://en.wikipedia.org/wiki/Fixed-point_combinator">комбинатор неподвижной точки</a>, это и не сама <a href="https://en.wikipedia.org/wiki/Fixed_point_(mathematics)">неподвижная точка</a>.</p>
+<p>Выглядит как интересная безделица, но при моделировании state машин и IO мы еще к ней вернемся.</p>
+    </section>
+</article>
+
+        </main>
+
+        <footer>
+            Site proudly generated by
+            <a href="http://jaspervdj.be/hakyll">Hakyll</a>
+        </footer>
+    </body>
+</html>
