@@ -37,7 +37,7 @@ I’m gonna show you as gently as I can how much you don’t know.
 <h3 id="практика-применения.">Практика применения.</h3>
 <h4 id="let-it-be">Let it be</h4>
 <p>Первое (наверно) что бросается в глаза программисту пришедшему с императивных языков - это отсутствие присваивания в τ-lang. На самом деле присваивание конечно есть, но оно спрятано в двух местах - вызов функции (apply) и сопоставление по образцу (pattern-matching). Тем кто пришел с функциональных языков будет полегче, кто знаком с λ-calculus - совсем привычно. Давайте последовательно разберем.</p>
-<p>Возмем простую функцию NOT - если она получает на входе true - возращает false, если false - возвращает true. Вот она:</p>
+<p>Возьмем простую функцию NOT - если она получает на входе true - возращает false, если false - возвращает true. Вот она:</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode ml"><code class="sourceCode ocaml"><a class="sourceLine" id="cb1-1" title="1">(a =&gt; <span class="kw">match</span> a</a>
 <a class="sourceLine" id="cb1-2" title="2">  | <span class="kw">true</span> =&gt; <span class="kw">false</span></a>
 <a class="sourceLine" id="cb1-3" title="3">  | <span class="kw">false</span> =&gt; <span class="kw">true</span></a>
@@ -55,7 +55,7 @@ I’m gonna show you as gently as I can how much you don’t know.
 <a class="sourceLine" id="cb3-3" title="3">  | <span class="kw">true</span> =&gt; <span class="kw">false</span></a>
 <a class="sourceLine" id="cb3-4" title="4">  | <span class="kw">false</span> =&gt; <span class="kw">true</span></a>
 <a class="sourceLine" id="cb3-5" title="5">)</a></code></pre></div>
-<p>Первая строка - это объявление функии у которой первый параметр имеет имя not. Вторая и далее строки - это объявление первого параметра apply. При вызове этой функии значение (в данном случае объявление функции not) будет привязано к имени параметра (not)</p>
+<p>Первая строка - это объявление функции у которой первый параметр имеет имя not. Вторая и далее строки - это объявление первого параметра apply. При вызове этой функии значение (в данном случае объявление функции not) будет привязано к имени параметра (not)</p>
 <p>Другая возможность привязать значение к имени - это pattern matching или деструктуризация. Предположим у нас есть некоторая структура, например:</p>
 <div class="sourceCode" id="cb4"><pre class="sourceCode ml"><code class="sourceCode ocaml"><a class="sourceLine" id="cb4-1" title="1">(STATE (L (REG ax (S (S O))) (L (REG bx O) EMPTY)) CACHE MEM)</a></code></pre></div>
 <p>и эта структура передается вот этой функции:</p>
@@ -109,7 +109,7 @@ I’m gonna show you as gently as I can how much you don’t know.
 <a class="sourceLine" id="cb8-10" title="10">)</a></code></pre></div>
 <p>Что здесь происходит? Объявляется функция у которой два параметра - a и b (складываемые числа), при этом телом функции является <code>apply</code> в котором функцией является еще одно объявление:</p>
 <p><code>(sum a b =&gt; sum sum a b)</code>.</p>
-<p>Это объявление - так называемая рекурсивная обвязка. В итоге у нас функция сложения смотрит в мир с нормальным интерфейсом на два параметра а сама рекурсивная обвязка спрятана в теле функции.</p>
+<p>Это объявление - так называемая рекурсивная обвязка. В итоге у нас функция сложения смотрит в мир с нормальным интерфейсом на два параметра, а сама рекурсивная обвязка спрятана в теле функции.</p>
 <p>Вызов (3+2):</p>
 <div class="sourceCode" id="cb9"><pre class="sourceCode ml"><code class="sourceCode ocaml"><a class="sourceLine" id="cb9-1" title="1">(a b =&gt;</a>
 <a class="sourceLine" id="cb9-2" title="2">  (sum a b =&gt; sum sum a b)</a>
