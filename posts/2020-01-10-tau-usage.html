@@ -55,7 +55,7 @@ I’m gonna show you as gently as I can how much you don’t know.
 <a class="sourceLine" id="cb3-3" title="3">  | <span class="kw">true</span> =&gt; <span class="kw">false</span></a>
 <a class="sourceLine" id="cb3-4" title="4">  | <span class="kw">false</span> =&gt; <span class="kw">true</span></a>
 <a class="sourceLine" id="cb3-5" title="5">)</a></code></pre></div>
-<p>Первая строка - это объявление функции у которой первый параметр имеет имя not. Вторая и далее строки - это объявление первого параметра apply. При вызове этой функии значение (в данном случае объявление функции not) будет привязано к имени параметра (not)</p>
+<p>Первая строка - это объявление функции у которой первый параметр имеет имя not. Вторая и далее строки - это объявление первого параметра apply. При вызове этой функции значение (в данном случае объявление функции not) будет привязано к имени параметра (not)</p>
 <p>Другая возможность привязать значение к имени - это pattern matching или деструктуризация. Предположим у нас есть некоторая структура, например:</p>
 <div class="sourceCode" id="cb4"><pre class="sourceCode ml"><code class="sourceCode ocaml"><a class="sourceLine" id="cb4-1" title="1">(STATE (L (REG ax (S (S O))) (L (REG bx O) EMPTY)) CACHE MEM)</a></code></pre></div>
 <p>и эта структура передается вот этой функции:</p>
@@ -127,6 +127,95 @@ I’m gonna show you as gently as I can how much you don’t know.
 <div class="sourceCode" id="cb10"><pre class="sourceCode ml"><code class="sourceCode ocaml"><a class="sourceLine" id="cb10-1" title="1">(import sum from nat.tau)</a>
 <a class="sourceLine" id="cb10-2" title="2"></a>
 <a class="sourceLine" id="cb10-3" title="3">sum (S (S (S O))) (S (S O))</a></code></pre></div>
+<h4 id="присваивание-при-импорте-и-экспорте">Присваивание при импорте и экспорте</h4>
+<p>Но как же так? Если можно сделать import - очевидно что происходит связывание какого то символа (имени) со значением (импортируемой сущностью). То есть это третий способ связать значение с именем?</p>
+<p>Да, возможность такая есть, но я не отношу ее к возможностям языка. Это возможность которую дает препроцессор, а он не является частью языка. Если мы заглянем под капот то увидим что препроцессор читает содержимое модулей и подставляет значения в apply, то есть суть процесса сводится к первому сценарию который мы рассмотрели выше. Именно поэтому я не включаю этот сценарий в список возможностей предоставляемых <em>самим</em> языком τ-lang.</p>
+<p>Тем не менее при импорте происходит другой интересный процесс, который я предлагаю рассмотреть.</p>
+<h4 id="partial-apply">Partial apply</h4>
+<p>Помните что происходит при partial apply? Мы:</p>
+<ul>
+<li>берем функцию на n аргументов,</li>
+<li>передаем ей m аргументов, n и m такие что m &lt; n,</li>
+<li>и на выходе получаем функцию на n-m аргументов.</li>
+</ul>
+<p>А теперь давайте еще раз взглянем на функцию sum:</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode ml"><code class="sourceCode ocaml"><a class="sourceLine" id="cb11-1" title="1">(a b =&gt;</a>
+<a class="sourceLine" id="cb11-2" title="2">  (sum a b =&gt; sum sum a b)</a>
+<a class="sourceLine" id="cb11-3" title="3">    (sum a b =&gt;</a>
+<a class="sourceLine" id="cb11-4" title="4">        <span class="kw">match</span> a</a>
+<a class="sourceLine" id="cb11-5" title="5">        | O =&gt; b</a>
+<a class="sourceLine" id="cb11-6" title="6">        | S a' =&gt; S (sum sum a' b)</a>
+<a class="sourceLine" id="cb11-7" title="7">    )</a>
+<a class="sourceLine" id="cb11-8" title="8">    a</a>
+<a class="sourceLine" id="cb11-9" title="9">    b</a>
+<a class="sourceLine" id="cb11-10" title="10">)</a></code></pre></div>
+<p>Видите как внешняя функция-обвязка объявляет два аргумента - a и b и затем в своем теле передает их в другую функцию? Этот шаблон будет нам частно встречаться.</p>
+<p>А теперь давайте представим что произойдет если мы развернем эту функцию и возьмем только ее тело?</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode ml"><code class="sourceCode ocaml"><a class="sourceLine" id="cb12-1" title="1">  (sum a b =&gt; sum sum a b)</a>
+<a class="sourceLine" id="cb12-2" title="2">    (sum a b =&gt;</a>
+<a class="sourceLine" id="cb12-3" title="3">        <span class="kw">match</span> a</a>
+<a class="sourceLine" id="cb12-4" title="4">        | O =&gt; b</a>
+<a class="sourceLine" id="cb12-5" title="5">        | S a' =&gt; S (sum sum a' b)</a>
+<a class="sourceLine" id="cb12-6" title="6">    )</a></code></pre></div>
+<p>Это partial apply, у функции (в первой строке) - три аргумента а передается только один. Этот partial apply вернет нам функцию, давайте подумаем какую? У нас указан аргумент sum - значит его в сигнатуре новой функции не будет. А вот a и b не указаны - именно они и составят сигнатуру этой функции. И в таком же порядке будут переданы в теле:</p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode ml"><code class="sourceCode ocaml"><a class="sourceLine" id="cb13-1" title="1">(a b =&gt;</a>
+<a class="sourceLine" id="cb13-2" title="2">  (sum a b =&gt; sum sum a b)</a>
+<a class="sourceLine" id="cb13-3" title="3">    (sum a b =&gt;</a>
+<a class="sourceLine" id="cb13-4" title="4">        <span class="kw">match</span> a</a>
+<a class="sourceLine" id="cb13-5" title="5">        | O =&gt; b</a>
+<a class="sourceLine" id="cb13-6" title="6">        | S a' =&gt; S (sum sum a' b)</a>
+<a class="sourceLine" id="cb13-7" title="7">    )</a>
+<a class="sourceLine" id="cb13-8" title="8">    a</a>
+<a class="sourceLine" id="cb13-9" title="9">    b</a>
+<a class="sourceLine" id="cb13-10" title="10">)</a></code></pre></div>
+<p>То самое с чего мы начинали. Мысль простая - partial apply позволяет обойтись без подобной обертки, он ее генерирует сам в процессе вычисления. Это можно использовать как при экспорте функций так и в теле программы.</p>
+<h4 id="типизация">Типизация</h4>
+<p>Ок. τ-lang - не типизированный язык, откуда может появиться типизация? Да, язык не типизированный, но во первых у нас рано или поздно будет τ<sup><small>2</small></sup> c type checker-ом, а во вторых никто нам не мешает и на нетипизированном языке писать типизированные функции.</p>
+<p>Давайте взглянем на функцию sum (да, мы с ней еще не закончили).</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode ml"><code class="sourceCode ocaml"><a class="sourceLine" id="cb14-1" title="1">(a b =&gt;</a>
+<a class="sourceLine" id="cb14-2" title="2">  (sum a b =&gt; sum sum a b)</a>
+<a class="sourceLine" id="cb14-3" title="3">    (sum a b =&gt;</a>
+<a class="sourceLine" id="cb14-4" title="4">        <span class="kw">match</span> a</a>
+<a class="sourceLine" id="cb14-5" title="5">        | O =&gt; b</a>
+<a class="sourceLine" id="cb14-6" title="6">        | S a' =&gt; S (sum sum a' b)</a>
+<a class="sourceLine" id="cb14-7" title="7">    )</a>
+<a class="sourceLine" id="cb14-8" title="8">    a</a>
+<a class="sourceLine" id="cb14-9" title="9">    b</a>
+<a class="sourceLine" id="cb14-10" title="10">)</a></code></pre></div>
+<p>Если вы читали про <a href="../types/2020-01-24-types-and-type-inference.html">вывод типов в τ-lang</a> то, думаю, не составит особого труда вычислить тип аргумента a. Этот аргумент может быть только натуральным числом - то есть CGT O с примененным к нему ноль либо большее число раз индуктивным шагом (S nat).</p>
+<ul>
+<li>Если в аргументе a встретится иной конструктор (не S либо O) - это приведет к аварийному завершению (в match a).</li>
+<li>Если встретится конструктор O не с нулевым числом аргументов - аварийное завершение.</li>
+<li>Если встретится конструктор S не с одним аргументом (ноль либо больше одного аргументов) - аварийное завершение.</li>
+<li>Если не встретится конструктор O - функция не завершится (на самом деле недостижимый кейс - для того что бы не было конструктора O у конструктора S должно быть отличное от 1 число аргументов, что само по себе приведет к аварийному завершению, либо аргумент-конструктор отличный от S или O - что тоже приведет к аварийному завершению.</li>
+</ul>
+<p>Выглядит неплохо. А какой тип у аргумента b? Хм. Контроля структуры аргумента b (<code>match b</code>) у нас нет, то есть он может быть любой моделью. То есть его тип - <code>*</code> а сама функция полиморфна по отношению к этому аргументу. И мы можем сделать например так:</p>
+<div class="sourceCode" id="cb15"><pre class="sourceCode ml"><code class="sourceCode ocaml"><a class="sourceLine" id="cb15-1" title="1">sum (S O) (L e EMPTY)</a></code></pre></div>
+<p>и получить <code>(S (L e EMPTY))</code>. Вряд ли это то что мы хотим на самом деле. Ок. Но как нам указать что аргумент b должен быть натуральным числом?</p>
+<p>Помните про структурную identity (мы ее рассматривали там же, в выведении типов)? Давайте используем ее:</p>
+<div class="sourceCode" id="cb16"><pre class="sourceCode ml"><code class="sourceCode ocaml"><a class="sourceLine" id="cb16-1" title="1">(a b =&gt;</a>
+<a class="sourceLine" id="cb16-2" title="2">  (sum nat a b =&gt; sum sum nat a b)</a>
+<a class="sourceLine" id="cb16-3" title="3">    (sum nat a b =&gt;</a>
+<a class="sourceLine" id="cb16-4" title="4">        <span class="kw">match</span> a</a>
+<a class="sourceLine" id="cb16-5" title="5">        | O =&gt; nat b</a>
+<a class="sourceLine" id="cb16-6" title="6">        | S a' =&gt; S (sum sum nat a' b)</a>
+<a class="sourceLine" id="cb16-7" title="7">    )</a>
+<a class="sourceLine" id="cb16-8" title="8">    (a =&gt; </a>
+<a class="sourceLine" id="cb16-9" title="9">      (num a =&gt; num num a)</a>
+<a class="sourceLine" id="cb16-10" title="10">      (num a =&gt; <span class="kw">match</span> a</a>
+<a class="sourceLine" id="cb16-11" title="11">        | O =&gt; O</a>
+<a class="sourceLine" id="cb16-12" title="12">        | S a' =&gt; (S (num num a')) </a>
+<a class="sourceLine" id="cb16-13" title="13">      )</a>
+<a class="sourceLine" id="cb16-14" title="14">      a</a>
+<a class="sourceLine" id="cb16-15" title="15">    )</a>
+<a class="sourceLine" id="cb16-16" title="16">    a</a>
+<a class="sourceLine" id="cb16-17" title="17">    b</a>
+<a class="sourceLine" id="cb16-18" title="18">)</a></code></pre></div>
+<p>Помните я говорил что функция является объявлением типа? Этот пример - наглядная демонстрация.</p>
+<p>Мы изменили функцию sum добавив параметром функцию, и передаем этим параметром функцию-тип nat. А в клозе, возвращавшем b мы также возвращаем b но уже пропустив через nat. В итоге если b - натуральное число - то оно же и вернется. Если нет - то исполнение аварийно завершится.</p>
+<p>Вот теперь мы, глядя на функцию sum, можем уверенно сказать что ее тип:</p>
+<div class="sourceCode" id="cb17"><pre class="sourceCode ml"><code class="sourceCode ocaml"><a class="sourceLine" id="cb17-1" title="1">nat -&gt; nat -&gt; nat</a></code></pre></div>
+<p>Но самое приятное в этой ситуации - что то же самое сможет сказать и type-checker.</p>
     </section>
 </article>
 
